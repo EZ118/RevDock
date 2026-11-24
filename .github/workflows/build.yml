@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build pkg-config \
+            libx11-dev libxext-dev libxrandr-dev libxfixes-dev libxi-dev \
+            libxcursor-dev libxss-dev libwayland-dev libxkbcommon-dev \
+            wayland-protocols libdecor-0-dev
+      - name: Configure
+        run: cmake --preset linux-x11-release -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build --preset linux-x11-release
+      - name: Test
+        run: ctest --preset linux-x11-release --output-on-failure
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkgconf
+      - name: Configure
+        run: cmake --preset windows-mingw-release -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build --preset windows-mingw-release
+      - name: Test
+        run: ctest --preset windows-mingw-release --output-on-failure
